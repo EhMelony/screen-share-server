@@ -1,7 +1,7 @@
 const { WebSocketServer } = require('ws');
 
 const wss = new WebSocketServer({ port: process.env.PORT || 8080 });
-const hosts = {}; // Stores connected Hosts by PC Name
+const hosts = {};
 
 console.log("Server is running...");
 
@@ -10,19 +10,16 @@ wss.on('connection', (ws) => {
         if (!isBinary) {
             const text = message.toString();
             
-            // Host registers their PC name
             if (text.startsWith("HOST:")) {
                 const pcName = text.substring(5);
                 hosts[pcName] = ws;
                 ws.pcName = pcName;
                 console.log(`Host registered: ${pcName}`);
             } 
-            // Client requests list of online hosts
             else if (text === "LIST") {
                 const hostNames = Object.keys(hosts).join(",");
                 ws.send("HOSTS:" + hostNames);
             } 
-            // Client requests to connect to a specific Host
             else if (text.startsWith("CONNECT:")) {
                 const pcName = text.substring(8);
                 const hostWs = hosts[pcName];
@@ -34,6 +31,12 @@ wss.on('connection', (ws) => {
                 } else {
                     ws.send("HOST_NOT_FOUND");
                     ws.close();
+                }
+            }
+            // NEW: Forward control messages (FPS/Quality) from Viewer to Host
+            else {
+                if (ws.target && ws.target.readyState === 1) {
+                    ws.target.send(message, { binary: false });
                 }
             }
         } else {
