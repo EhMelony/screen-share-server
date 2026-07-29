@@ -17,8 +17,7 @@ wss.on('connection', (ws) => {
                 console.log(`Host registered: ${pcName}`);
             } 
             else if (text === "LIST") {
-                const hostNames = Object.keys(hosts).join(",");
-                ws.send("HOSTS:" + hostNames);
+                ws.send("HOSTS:" + Object.keys(hosts).join(","));
             } 
             else if (text.startsWith("CONNECT:")) {
                 const pcName = text.substring(8);
@@ -33,11 +32,9 @@ wss.on('connection', (ws) => {
                     ws.close();
                 }
             }
-            // NEW: Forward control messages (FPS/Quality) from Viewer to Host
-            else {
-                if (ws.target && ws.target.readyState === 1) {
-                    ws.target.send(message, { binary: false });
-                }
+            // FORWARD CONTROL MESSAGES (FPS/Quality) TO THE TARGET
+            else if (ws.target && ws.target.readyState === 1) {
+                ws.target.send(text, { binary: false });
             }
         } else {
             // Binary data (Screen frames). Forward to the paired connection.
